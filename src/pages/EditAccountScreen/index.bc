@@ -1,0 +1,271 @@
+import React, {useState, useEffect, useCallback} from 'react'
+import { View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity, Image, Pressable, Modal, Alert, RefreshControl, Platform } from 'react-native'
+import iconArrowBack from '../../assets/icons/iconArrowBack.png';
+import iconProfil from '../../assets/icons/iconProfil.png';
+import { auth } from '../../../firebase';
+import { getAuth, updateProfile } from 'firebase/auth'
+import { db } from '../../../firebase';
+import { collection, doc, getDocs, updateDoc } from 'firebase/firestore/lite';
+import ImagePicker from 'react-native-image-crop-picker';
+import storage from '@react-native-firebase/storage';
+import firestore from '@react-native-firebase/firestore'
+import { utils } from '@react-native-firebase/app';
+
+const wait = (timeout) => {
+  return new Promise(resolve => setTimeout(resolve, timeout));
+}
+
+const EditAccountScreen = ({navigation}) => {
+  const [refreshing, setRefreshing] = useState(false);
+  const [userInfo, setUserInfo] = useState([])
+  const [modalVisible, setModalVisible] = useState(false);
+  const [image, setImage] = useState(auth.currentUser.photoURL)
+  const [userName, setUserName] = useState(auth.currentUser.displayName)
+  const [userAddress, setUserAddress] = useState('')
+  const [userEmail, setUserEmail] = useState('')
+  const [userPhone, setUserPhone] = useState('')
+  const [userPassword, setUserPassword] = useState('')
+  const [docID, setDocID] = useState('')
+  const docRef = collection(db, 'users');
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    wait(2000).then(() => setRefreshing(false));
+  }, []);
+
+  useEffect(() => {
+    const getUserInfo = async () => {
+      const data = await getDocs(docRef);
+      setUserInfo(data.docs.map((doc) => ({...doc.data(), id: doc.id})));
+    }
+    getUserInfo().then(() => {
+      const userData = userInfo.find(obj => {return obj.user_email == auth.currentUser.email});
+      console.log(userData)
+      setUserPhone(userData.user_phone);
+      setUserAddress(userData.user_alamat);
+    }).catch((error) => {
+      const errorMessage = error.message;
+      console.log(errorMessage);
+    })
+  }, [refreshing]);
+
+  const getInfo = () => {
+    // const userData = userInfo.find(obj => {return obj.user_email = auth.currentUser.email})
+    // var displayTemp = userData.user_phone
+    // setUserPhone(displayTemp)
+    // console.log(displayTemp)
+    // setDisplayName(displayTemp)
+  };
+
+  const takeFromCamera = () => {
+    ImagePicker.openCamera({
+      width: 300,
+      height: 300,
+      cropping: true,
+    }).then(image => {
+      console.log(image);
+    });
+  }
+
+  const takeFromLibrary = () => {
+    ImagePicker.openPicker({
+      width: 300,
+      height: 300,
+      cropping: true
+    }).then(image => {
+      console.log(image);
+      const imageUri = Platform.OS === 'ios' ? image.sourceURL : image.path
+      setImage(imageUri)
+      setModalVisible(false)
+    });
+  }
+
+  const updateHandler = async () => {
+    const authentication = getAuth();
+    updateProfile(authentication.currentUser, {
+      displayName : userName,
+    })
+    const userData = userInfo.find(obj => {return obj.user_email == auth.currentUser.email})
+    setDocID(userData.id)
+    const userDoc = doc(db, 'users', docID)
+    await updateDoc(userDoc, {
+      user_nama: userName,
+      user_phone: userPhone,
+      user_alamat: userAddress
+    })
+    await uploadImage();
+  }
+
+  const consoleDebug = () => {
+    const userCheck = userInfo.find(obj => {return obj.user_email == auth.currentUser.email})
+    console.log(userCheck)
+  }
+
+  const handleUploadStorage = async () => {
+    const uploadUri = image;
+    const reference = storage().ref('testing.png');
+    try{
+      await reference.putFile(uploadUri);
+    }catch(e){
+      console.log(e);
+    }
+
+    // const mountainsRef = ref(storage, 'Artboard1.png');
+    // const mountainImagesRef = ref(storage, '/files/test2.png');
+    // const metadata = {
+    //   contentType: 'image/jpeg',
+    // };
+    // const img = await fetch(iconProfil);
+    // console.log(img)
+    // const bytes = await img.blob
+    // console.log(bytes)
+    // const uploadTask = () => {
+    //   uploadBytes(mountainImagesRef, iconProfil, metadata)
+    // }  
+    // uploadTask();
+  }
+
+  const uploadImage = async () => {
+    if (image == null){
+      return null
+    }
+    const uploadUri = image;
+    const reference = storage().ref('/profile/profil1.png');
+    const task = reference.putFile(uploadUri);
+    try{
+      await task;
+      const url = await reference.getDownloadURL();
+        const authentication = getAuth();
+        console.log(authentication.currentUser.photoURL)
+        await updateProfile(authentication.currentUser, {
+          photoURL : url,
+        })
+        console.log(authentication.currentUser.photoURL);
+      setImage(null);
+    }catch(e){
+      console.log(e);
+      return null;
+    }
+  }
+
+  return (
+    <ScrollView style={{flex: 1, backgroundColor: '#0083FF', }}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+        />
+      }
+    >
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => {
+          Alert.alert("Dibatalkan");
+          setModalVisible(!modalVisible);
+        }}
+      >
+        <View style={{alignSelf: 'center', top: '35%'}}>
+          <View style={{width: 250, height: '45%', justifyContent: 'space-evenly', alignItems: 'center', backgroundColor: 'white', borderRadius: 20, elevation: 10,}}>
+            <View style={{backgroundColor: '#EEEEEE', width: '80%', height: '28%', alignItems: 'center', justifyContent: 'center', borderRadius: 50, paddingVertical: 5}}>
+              <Text style={{color: 'black'}}>Choose Image From</Text>
+            </View>
+            <TouchableOpacity 
+              style={{backgroundColor: '#0083FF', width: 100, alignItems: 'center', borderRadius: 50, paddingVertical: 3}}
+              onPress={() => takeFromCamera()}
+              >
+              <Text style={{color: 'white'}}>Camera</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={{borderWidth: 1, width: 100, alignItems: 'center', borderRadius: 50, borderColor: 'grey',paddingVertical: 3}}
+              onPress={() => takeFromLibrary()}
+              >
+              <Text>Gallery</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={{borderWidth: 1, width: 100, alignItems: 'center', borderRadius: 50, borderColor: 'grey',paddingVertical: 3}}
+              onPress={() => setModalVisible(false)}
+              >
+              <Text>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <View style={styles.container}>
+        <View style={{flexDirection: 'row'}}>
+          <Pressable onPress={() => navigation.push('Utama')}>
+            <Image source={iconArrowBack} style={{width: 30, height: 30}}/>
+          </Pressable>
+          <Text style={{color: 'white', paddingVertical: 5, paddingHorizontal: 10}}>Edit Account</Text>
+        </View>
+        <View style={{alignItems: 'center', paddingVertical: 20}}>
+          <Pressable onPress={() => handleUploadStorage()}>
+            <Text style={{color: 'white', fontSize: 20, paddingBottom: 10}}>Profile Image</Text>
+          </Pressable>
+          <View style={{width: 70, height: 70, backgroundColor: 'transparent', borderRadius: 100}}>
+            <Image source={{uri: image}} style={{width: 70, height: 70, borderRadius: 100}}/>
+          </View>
+          <TouchableOpacity onPress={() => setModalVisible(true)}>
+            <Text style={{color: 'white', paddingTop: 5}}>Change</Text>
+          </TouchableOpacity>
+        </View>
+        <Text style={styles.textTitle}>Name</Text>
+        <TextInput 
+          style={styles.textBox} 
+          defaultValue = {auth.currentUser.displayName}
+          value={userName}
+          onChangeText={text => setUserName(text)}
+        />
+        <Text style={styles.textTitle}>Address</Text>
+        <TextInput 
+          style={styles.textBox} 
+          defaultValue={userAddress}
+          value={userAddress}
+          onChangeText={text => setUserAddress(text)}
+        />
+        <Text style={styles.textTitle}>Email</Text>
+        <TextInput style={styles.textBox} defaultValue = {auth.currentUser.email}/>
+        <Text style={styles.textTitle}>Phone Number</Text>
+        <TextInput 
+          style={styles.textBox} 
+          defaultValue = {userPhone}
+          value={userPhone}
+          onChangeText={text => setUserPhone(text)}
+        />
+        <Text style={styles.textTitle}>Password</Text>
+        <TextInput style={styles.textBox}/>
+        <Text style={styles.textTitle}>Confirm Password</Text>
+        <TextInput style={styles.textBox}/>
+        <TouchableOpacity style={{width: '30%', height: '5%', backgroundColor: 'white', borderRadius: 20, justifyContent: 'center',alignItems: 'center', alignSelf: 'center', marginTop: 15}}
+          onPress={() => updateHandler()}
+        >
+          <Text>Save</Text>
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
+)}
+
+const styles = StyleSheet.create({
+  container: {
+    justifyContent: 'center',
+    padding: 20,
+  },
+  textBox: {
+    backgroundColor: 'white',
+    borderRadius: 15,
+    paddingHorizontal: 20,
+    paddingVertical: 5,
+    alignSelf: 'center',
+    width: '100%',
+    marginBottom: 15
+  },
+  textTitle: {
+      color: 'white',
+      marginBottom: 10
+  }
+})
+
+
+export default EditAccountScreen;
