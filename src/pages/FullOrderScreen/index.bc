@@ -1,0 +1,82 @@
+import React, {onPress, useState, useEffect} from 'react';
+import {Text, View, Button, StyleSheet, Image, Pressable, TouchableOpacity, ScrollView, TouchableNativeFeedback, Platform} from 'react-native';
+import iconArrowBack from '../../assets/icons/iconArrowBack.png';
+import notifIcon from '../../assets/icons/notifications_none.png';
+import iconRegular from '../../assets/icons/iconRegular.png';
+import arrowChevron from '../../assets/icons/arrowChevron.png';
+import { db } from '../../../firebase';
+import { collection, getDocs } from 'firebase/firestore/lite';
+
+const FullOrders = ({navigation}) => {
+  const [orders, setOrders] = useState([]);
+  const docRef = collection(db, 'orders');
+
+  useEffect(() => {
+    const getOders = async () => {
+    const data = await getDocs(docRef);
+    setOrders(data.docs.map((doc) => ({...doc.data(), id: doc.id})));
+  }
+    getOders();
+  }, []);
+
+
+  return (
+    <ScrollView style={{flex: 1, backgroundColor: '#0083FF', flex: 1}}>
+      <Pressable onPress={() => navigation.pop()}>
+        <Image source={iconArrowBack} style={{ position: 'absolute', width: 30, height: 30, top: 51, left: 20}} />
+      </Pressable>
+      <View style={{justifyContent: 'center', alignItems: 'center', padding: 10}}>
+        <Text style={styles.pageTitle}>Order Status</Text>
+        <View style={styles.mainBox}>
+          {orders.map((order) => {
+            return(
+              <View style={{flexDirection: 'row', justifyContent: 'space-evenly'}}>
+                <Text style={styles.orderID}>Order ID : #{order.id}</Text>
+                <Text style={styles.orderStatus}>Order Confirmed</Text>
+              </View>
+            )
+          })}
+        </View>
+      </View>
+    </ScrollView>
+  );
+};
+
+const styles = StyleSheet.create({
+  iconMain: {
+    width: 40,
+    height: 40
+  },
+  textIconMain: {
+    fontFamily: 'Roboto'
+  },
+  pageTitle: {
+    color: 'white',
+    fontSize: 25,
+    fontWeight: 'bold',
+    marginHorizontal: 30,
+    marginVertical: 40
+  },
+  mainBox: {
+    flex: 1,
+    backgroundColor: 'white',
+    borderRadius: 15,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    marginBottom: 10
+  },
+  orderOptions: {
+    color: 'black',
+    paddingVertical: 15
+  },
+  orderID: {
+    //color: '#55D9E1'
+    marginBottom: 15,
+    paddingRight: 70
+  },
+  orderStatus: {
+    color: '#0083FF'
+  }
+});
+
+export default FullOrders;

@@ -1,0 +1,115 @@
+import React, {useLayoutEffect, useCallback, useEffect, useState} from 'react'
+import {StyleSheet, Text, View, Image, TouchableOpacity, Modal, Alert} from 'react-native';
+import { auth } from '../../../firebase';
+import { db } from '../../../firebase';
+import { GiftedChat } from 'react-native-gifted-chat';
+import { collection, query, orderBy, limit, doc, setDoc } from "firebase/firestore";  
+import { onSnapshot,where } from 'firebase/firestore';
+
+const CsScreen = ({navigation}) => {
+  
+  const [messages, setMessages] = useState([]);
+
+    /*useEffect(() => {
+      setMessages([
+        {
+          _id: 1,
+          text: 'Hello developer',
+          createdAt: new Date(),
+          user: {
+            _id: 2,
+            name: 'React Native',
+            avatar: 'https://placeimg.com/140/140/any',
+          },
+        },
+      ])
+    }, [])*/
+    useLayoutEffect(() => {
+      const unsubscribe = db.collection('chats').orderBy('createdAt', 'desc').onSnapshot(snapshot => setMessages(
+        snapshot.docs.map(doc => ({
+            _id: doc.data()._id,
+            createdAt: doc.data().createdAt.toDate(),
+            text: doc.data().text,
+            user: doc.data().user,
+        }))))
+
+      // const get_info = async () => {
+      //   const docRef = collection(db, 'chats');
+      //   const data = await getDocs(docRef);
+      //   //const first = query(docRef, orderBy('createdAt', 'desc'));
+      //   // messages.map((message) => {
+      //   //   let dateTemp = message.createdAt.toDate()
+      //   // })
+      //   setMessages(data.docs.map((doc) => ({
+      //     _id: doc.data()._id,
+      //     createdAt: doc.data().createdAt.toDate(),
+      //     text: doc.data().text,
+      //     user: doc.data().user,
+      //   })))
+      //   console.log(first)
+      // }
+      // get_info();
+      
+        // const unsubscribe = collection(db, 'chats').orderBy('createdAt', 'desc').onSnapshot(
+        //   snapshot => setMessages(
+        //       snapshot.docs.map(doc => ({
+        //         _id: doc.data()._id,
+        //         createdAt: doc.data().createdAt.toDate(),
+        //         text: doc.data().text,
+        //         user: doc.data().user
+        //       }))
+        //   ))
+
+          // const docRef = collection(db, 'orders');
+          // const data = await getDocs(docRef);
+          // const Orders = (data.docs.map((doc) => ({...doc.data(), id: doc.id})));
+          
+      // const docRef = collection(db, 'chats');
+      // const q = query(docRef, orderBy('createdAt', 'desc'));
+      // const unsubscribe = onSnapshot(q, (QuerySnapshot) => {
+      //     const chats = [];
+      //     QuerySnapshot.forEach((doc) => ({
+      //         _id: doc.data().text,
+      //         createdAt: doc.data().createdAt,
+      //         text: doc.data().text,
+      //         user: doc.data().user
+      //     }));
+      // });
+        return unsubscribe;
+    }, []);
+
+    // useEffect(() => {
+    //   setMessages([
+    //     {
+    //       _id: 1,
+    //       text: 'Hello developer',
+    //       createdAt: new Date(),
+    //       user: {
+    //         _id: 2,
+    //         name: 'React Native',
+    //       },
+    //     },
+    //   ])
+    // }, [])
+
+    const onSend = useCallback((messages = []) => {
+      setMessages(previousMessages => GiftedChat.append(previousMessages, messages))
+      const {_id, createdAt, text, user }=messages[0]
+      const docRef = doc(collection(db,'chats'));
+      setDoc(docRef,{_id, createdAt, text, user })
+    }, [])
+
+
+    return (
+          <GiftedChat
+              messages={messages}
+              onSend={messages => onSend(messages)}
+              user={{
+              _id: auth?.currentUser?.email,
+              name: auth?.currentUser?.displayName
+          }}
+          />
+    )
+}
+
+export default CsScreen;

@@ -1,0 +1,240 @@
+import React, {onPress, useContext, useEffect, useRef, useState} from 'react';
+import {Text, View, Button, StyleSheet, Image, Pressable, DrawerLayoutAndroid, TouchableOpacity} from 'react-native';
+import menuIcon from '../../assets/icons/menu.png';
+import notifIcon from '../../assets/icons/notifications_none.png';
+import iconCS from '../../assets/icons/iconCS.png';
+import iconDryClean from '../../assets/icons/iconDryClean.png';
+import iconIroning from '../../assets/icons/iconIroning.png';
+import iconRegular from '../../assets/icons/iconRegular.png';
+import iconArrowBack from '../../assets/icons/iconArrowBack.png';
+import iconProfil from '../../assets/icons/iconProfil.png';
+import iconHelp from '../../assets/icons/iconHelp.png';
+import iconLogOut from '../../assets/icons/iconLogOut.png';
+import { auth } from '../../../firebase';
+import { db } from '../../../firebase';
+import { signOut } from "firebase/auth";
+import { getDocs } from 'firebase/firestore/lite';
+import { collection } from 'firebase/firestore/lite';
+
+const HomeScreen = ({navigation}) => {
+  const [orders, setOrders] = useState([]);
+  const [displayName, setDisplayName] = useState({namas: 'Ojan'});
+  const [activate, setActivate] = useState(0);
+  const docRef = collection(db, 'orders');
+
+  const handleSignOut = async () => {
+    await signOut(auth)
+    .then((re)=> {
+      navigation.replace("SignIn")
+    })
+    .catch((error)=> {
+      const errorMessage = error.message;
+      console.log(errorMessage);
+    })
+  }
+
+  const getInfo = () => {
+    // const userName = users.find(obj => {return obj.user_email = auth.currentUser.email})
+    // var displayTemp = userName.user_nama
+    console.log(auth)
+    // setDisplayName(displayTemp)
+  };
+
+  useEffect(() => {
+    const getOders = async () => {
+      const data = await getDocs(docRef);
+      setOrders(data.docs.map((doc) => ({...doc.data(), id: doc.id})));
+    }
+    getOders();
+  }, []);
+
+  const drawer = useRef(null);
+
+  const navigationView = () => (
+    <View style={styles.container}>
+      <TouchableOpacity style={{alignSelf: 'flex-end'}} onPress={() => drawer.current.closeDrawer()}>
+        <Image source={iconArrowBack} style={{width: 40, height: 40}}/>
+      </TouchableOpacity>
+
+      <View>
+        <TouchableOpacity style={styles.drawerContainer} onPress={() => {drawer.current.closeDrawer(); navigation.push('EditAkun')}}>
+          <Image source={{uri: auth.currentUser.photoURL}} style={styles.drawerIcon}/>
+          <Text style={styles.drawerText}>Akun</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.drawerContainer}>
+          <Image source={iconHelp} style={styles.drawerIcon}/>
+          <Text style={styles.drawerText}>Help</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.drawerContainer} onPress={handleSignOut}>
+          <Image source={iconLogOut} style={styles.drawerIcon}/>
+          <Text style={styles.drawerText}>Log Out</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+//   const pressHandler = async () => {
+//     const querySnapshot = await getDocs(collection(db, "orders"));
+//     querySnapshot.forEach((doc) => {
+//     // doc.data() is never undefined for query doc snapshots
+//     console.log(doc.id, " => ", doc.data());
+// });
+//   };
+
+  return (
+    <DrawerLayoutAndroid
+      style={{flex: 1, backgroundColor: '#F2F3F5'}}
+      ref={drawer}
+      drawerWidth={300}
+      renderNavigationView={navigationView}
+    >
+      <View
+        style={{
+          flex: 1.8,
+          backgroundColor: '#0083FF',
+          borderBottomEndRadius: 30,
+          borderBottomStartRadius: 30,
+          justifyContent: 'center',
+        }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 40,}}>
+          <Pressable onPress={() => drawer.current.openDrawer()}>
+            <Image source={menuIcon} style={{width: 40, height: 40}} />
+          </Pressable>
+          <View style={{borderRadius: 50,width: 80,height: 80,backgroundColor: 'transparent',marginBottom: 10,}}>
+            <Image source={iconProfil} style={{width: 80,height: 80}}/>
+          </View>
+          <Pressable>
+            <Image source={notifIcon} style={{width: 40, height: 40}} />
+          </Pressable>
+        </View>
+        <View style={{alignItems: 'center', flex: 1}}>
+          <Text
+            style={{
+              color: 'white',
+              fontSize: 20,
+              fontFamily: 'Lato',
+              fontWeight: 'bold',
+            }}>
+            {auth.currentUser.displayName}
+          </Text>
+          <Text
+            style={{
+              color: 'white',
+              fontSize: 12,
+              fontFamily: 'Lato',
+              marginBottom: 50,
+            }}>
+            {auth.currentUser.email}
+          </Text>
+        </View>
+        <View
+          style={{
+            flexDirection: 'row',
+            paddingTop: 250,
+            position: 'absolute',
+            paddingHorizontal: 17,
+          }}>
+          <Pressable style={styles.mainBox} onPress={() => navigation.push('Regular', {serviceType: 'Regular'})}>
+            <Image source={iconRegular} style={styles.iconMain}/>
+            <Text style={styles.textIconMain}>Regular</Text>
+          </Pressable>
+          <Pressable style={styles.mainBox} onPress={() => navigation.push('Regular', {serviceType: 'Dry Clean'})}>
+            <Image source={iconDryClean} style={styles.iconMain}/>
+            <Text style={styles.textIconMain}>Dry-Clean</Text>
+          </Pressable>
+          <Pressable style={styles.mainBox} onPress={() => navigation.push('Regular', {serviceType: 'Ironing'})}>
+            <Image source={iconIroning} style={{width: 47, height: 30, marginBottom: 10}}/>
+            <Text style={styles.textIconMain}>Ironing</Text>
+          </Pressable>
+          <Pressable style={styles.mainBox} 
+            onPress={() => navigation.push('CsScreen')}>
+            <Image source={iconCS} style={styles.iconMain}/>
+            <Text style={styles.textIconMain}>Costumer Service</Text>
+          </Pressable>
+        </View>
+      </View>
+
+      <View style={{flex: 3, paddingHorizontal: 20}}>
+        <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
+          <Text style={{marginTop: 50, fontSize: 20, fontWeight: 'bold'}}>
+            Active Orders
+          </Text>
+          <Pressable
+            style={{
+              marginTop: 50,
+              backgroundColor: '#0083FF',
+              borderRadius: 50,
+              width: 70,
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
+            onPress={() => navigation.push('FullOrders')}
+          >
+            <Text style={{color: 'white'}}>View All</Text>
+          </Pressable>
+        </View>
+
+        <View style={{ flex: 1, backgroundColor: 'white', borderRadius: 20, marginTop: 20, padding: 20}}>
+          {orders.map((order) => {
+            return(
+              <View style={{flexDirection: 'row', justifyContent: 'space-evenly'}}>
+                <Text style={styles.orderID}>Order ID : #{order.id}</Text>
+                <Text style={styles.orderStatus}>Order Confirmed</Text>
+              </View>
+            )
+          })}
+        </View>
+      </View>
+    </DrawerLayoutAndroid>
+  );
+};
+
+const styles = StyleSheet.create({
+  mainBox: {
+    width: 80,
+    height: 100,
+    backgroundColor: 'white',
+    borderRadius: 10,
+    marginHorizontal: 5,
+    elevation: 10,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  iconMain: {
+    width: 40,
+    height: 40
+  },
+  textIconMain: {
+    fontFamily: 'Roboto'
+  },
+  container: {
+    flex: 1,
+    padding: 30,
+    backgroundColor: "#0083FF"
+  },
+  drawerContainer: {
+    paddingTop: 60,
+    flexDirection: 'row',
+    marginHorizontal: 10,
+  },
+  drawerText: {
+    fontSize: 30,
+    fontWeight: 'bold',
+    color: 'white'
+  },
+  drawerIcon: {
+    width: 40, 
+    height: 40,
+    marginRight: 25
+  },
+  orderID: {
+    //color: '#55D9E1'
+    marginBottom: 15,
+    paddingRight: 70
+  },
+  orderStatus: {
+    color: '#0083FF'
+  }
+});
+
+export default HomeScreen;

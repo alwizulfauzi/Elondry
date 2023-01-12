@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "321825712648",
+    "firebase_url": "https://elondry-3f70e-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "elondry-3f70e",
+    "storage_bucket": "elondry-3f70e.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:321825712648:android:cd4375fbf899095dba7fbd",
+        "android_client_info": {
+          "package_name": "com.elondryapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "321825712648-3nap2t3r226lkq75a14kcg56n3ra1qv0.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBUULx8yGZavhOQ5sYPwU2AoeyYnqyFCkg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "321825712648-3nap2t3r226lkq75a14kcg56n3ra1qv0.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
